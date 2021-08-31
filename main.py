@@ -9,16 +9,14 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 from torchvision import transforms as T
 from shutil import copyfile
-from net import FeatureNetwork1HeadWithHandcrafted, FeatureNetwork1HeadNoHandcrafted, FeatureNetwork1HeadWithHandcraftedV2, FeatureNetwork1HeadWithHandcraftedV3, TestNetwork
+from net import FeatureNetwork1HeadWithHandcrafted, FeatureNetwork1HeadNoHandcrafted, FeatureNetwork1HeadWithHandcraftedV2, FeatureNetwork1HeadWithHandcraftedV3
 from helper import Mode
 import logging
-from util import ConfigLoader, ImageDataset
+from util import ImageDataset
 import math
 import pandas as pd
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 from collections import Counter
-from sklearn.utils import class_weight
-from torch.utils.data import WeightedRandomSampler
+
 
 logging.basicConfig(level=logging.INFO)
 
@@ -26,37 +24,35 @@ config = {
   "base": {
     "base_network": "ResNet 50",
     "img_size": 224,
-    "problem_type": "DR",
+    "problem_type": "DME",
     "feature_scaler": "standardscaler",
     "use_handcrafted_features": True,
     "pretrained": False,
     "gpu_id": 0,
-    "mode": "test",
+    "mode": "training",
     "hyper_params": {
       "batch_size": 32
     }
   },
   "datasets": {
     "training": {
-      "dir_inputs": "../data/CV/1/training/DME",
-      "dir_features": "../data/training/features"
+      "dir_inputs": "data/CV/1/training/DME",
+      "dir_features": "data/training/features"
     },
     "validation": {
-      "dir_inputs": "../data/CV/1/validation/DME",
-      "dir_features": "../data/validation/features"
+      "dir_inputs": "data/CV/1/validation/DME",
+      "dir_features": "data/validation/features"
     },
     "test": {
-      "dir_inputs": "../data/test/data/DR",
-      "dir_features": "../data/test/features"
+      "dir_inputs": "data/test/data/DR",
+      "dir_features": "data/test/features"
     }
   },
   "modes": {
     "hptuning": {
       "learning_rate": True,
       "batch_size": False,
-      "epoch": False,
-      "use_class_weights": False,
-      "use_weighted_sampling": False
+      "epoch": False
     },
     "training": {
       "hyper_params": {
@@ -131,9 +127,6 @@ else:
 model.to(device)
 
 def hyperparamtuning(num_epochs=100):
-    use_class_weights = config["modes"]["hptuning"]["use_class_weights"]
-    use_sampler = config["modes"]["hptuning"]["use_weighted_sampling"]
-
     train_dir_in = config["datasets"]["training"]["dir_inputs"]
     train_features_in = config["datasets"]["training"]["dir_features"]
 
@@ -241,8 +234,6 @@ def hyperparamtuning(num_epochs=100):
         plt.clf()
 
 def train():
-    use_class_weights = config["modes"]["training"]["use_class_weights"]
-    use_sampler = config["modes"]["training"]["use_weighted_sampling"]
 
     if "last_checkpoint" in config["modes"]["training"].keys():
         checkpoint = config["modes"]["training"]["last_checkpoint"]
@@ -264,7 +255,7 @@ def train():
     train_dir_in = config["datasets"]["training"]["dir_inputs"]
     train_features_in = config["datasets"]["training"]["dir_features"]
     val_dir_in = config["datasets"]["validation"]["dir_inputs"]
-    val_features_in = config["datasets"]["training"]["dir_features"] # TODO?
+    val_features_in = config["datasets"]["validation"]["dir_features"]
     
     lr = config["modes"]["training"]["hyper_params"]["lr"]
     num_epochs = config["modes"]["training"]["hyper_params"]["epochs"]
